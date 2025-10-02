@@ -2,6 +2,7 @@
 #define GUI_H
 
 #include <memory>
+#include <string>
 
 #include "Screen.h"
 
@@ -11,6 +12,7 @@ private:
 
 public:
 	void start();
+	void switch_screen(std::unique_ptr<Screen> n_scr);
 };
 
 #endif // GUI_H

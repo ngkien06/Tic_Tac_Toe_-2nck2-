@@ -1,8 +1,24 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include <memory>
+
+#include "Button.h"
+
+class GUI; // forward declaration???
+
+/// --------------
+
 class Screen {
+private:
+	GUI& gui_ref;
+
 public:
+	Screen(GUI& gui);
+
+public:
+	GUI& get_gui_ref();
+
 	virtual void draw() = 0;
 	virtual void update() = 0;
 	virtual void handle_input() = 0;
@@ -11,6 +27,25 @@ public:
 };
 
 class MenuScreen : public Screen {
+private:
+	Button button_play;
+
+public:
+	MenuScreen(GUI& gui);
+
+public:
+	void draw() override;
+	void update() override;
+	void handle_input() override;
+};
+
+class GameScreen : public Screen {
+private:
+	Button button_back;
+
+public:
+	GameScreen(GUI& gui);
+
 public:
 	void draw() override;
 	void update() override;
