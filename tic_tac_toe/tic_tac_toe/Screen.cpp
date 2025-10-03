@@ -46,9 +46,14 @@ void MenuScreen::handle_input() {
 // --------------- <GameScreen> ------------------------
 
 GameScreen::GameScreen(GUI& gui) : Screen(gui) {
-	button_back.rec = { ScreenS::ScreenWidth / 70, ScreenS::ScreenHeight / 70, ScreenS::ScreenWidth / 10, ScreenS::ScreenHeight / 22 };
+	button_back.rec = { 60 * ScreenS::ScreenWidth / 70, 65 * ScreenS::ScreenHeight / 70, ScreenS::ScreenWidth / 10, ScreenS::ScreenHeight / 22 };
 	button_back.txt = "Back";
 	button_back.font_sz = 20;
+
+	button_clear.rec = { 0, 2 * ScreenS::ScreenHeight / 3, ScreenS::ScreenWidth / 9, ScreenS::ScreenHeight / 21 };
+	button_clear.rec.x = 8 * ScreenS::ScreenWidth / 10 - button_clear.rec.width / 2;
+	button_clear.txt = "Clear";
+	button_clear.font_sz = 24;
 
 	float cornerX = 9 * ScreenS::ScreenWidth / 160;
 	float dis = (6 * ScreenS::ScreenWidth / 10 - 2 * cornerX) / 3; // Divider at 6:4
@@ -59,8 +64,13 @@ GameScreen::GameScreen(GUI& gui) : Screen(gui) {
 			grid_3x3[i][j].t = ' ';
 			grid_3x3[i][j].rec = { cornerX + j * dis, cornerY + i * dis, dis, dis };
 		}
-	}
 
+		c_3x3.r[i] = 0; c_3x3.c[i] = 0;
+	}
+	c_3x3.d1 = 0; c_3x3.d2 = 0;
+
+	moves.clear();
+	status = "Pending";
 	curr_sym = true;
 }
 
@@ -68,13 +78,14 @@ void GameScreen::draw() {
 	ClearBackground(ScreenC::C[4]);
 
 	button_back.draw();
+	button_clear.draw();
 
 	draw_grid_3x3();
 
 	//Draw divider at 6:4
 	DrawLineEx({ 6 * ScreenS::ScreenWidth / 10, 0 }, { 6 * ScreenS::ScreenWidth / 10, ScreenS::ScreenHeight }, 4, ScreenC::C[3]);
 
-
+	if (status != "Pending") { print_result(); }
 }
 
 void GameScreen::update() {
@@ -88,6 +99,12 @@ void GameScreen::handle_input() {
 		gui_ref.switch_screen(std::move(n_scr));
 	}
 
+	if (button_clear.is_clicked()) {
+		clear_grid_3x3();
+	}
+
+	if (status != "Pending") { return; }
+
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			if (CheckCollisionPointRec(GetMousePosition(), grid_3x3[i][j].rec) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -95,11 +112,18 @@ void GameScreen::handle_input() {
 
 				if (grid_3x3[i][j].t == ' ') {
 					grid_3x3[i][j].t = curr_sym ? 'O' : 'X';
+					moves.push_back({ i, j });
+					check_3x3();
 					curr_sym = !curr_sym;
 				}
 			}
 		}
 	}
+}
+
+void GameScreen::print_result() {
+	float w = MeasureText(status.c_str(), 60);
+	DrawText(status.c_str(), 3 * ScreenS::ScreenWidth / 10 - w / 2, 6 * ScreenS::ScreenWidth / 7, 60, ScreenC::C[0]);
 }
 
 void GameScreen::draw_grid_3x3() {
@@ -125,7 +149,42 @@ void GameScreen::draw_grid_3x3() {
 		}
 	}
 
+	// should this be in draw()?
 	std::string txt = curr_sym ? "Turn: O" : "Turn: X";
 	float w = MeasureText(txt.c_str(), 38);
 	DrawText(txt.c_str(), cornerX + 3 * dis / 2 - w / 2, cornerY + 3.5 * dis, 38, ScreenC::C[0]);
+}
+
+void GameScreen::clear_grid_3x3() {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) { grid_3x3[i][j].t = ' '; }
+	}
+
+	status = "Pending";
+	c_3x3 = {
+		{0,0,0},
+		{0,0,0},
+		0,0
+	};
+	moves.clear();
+}
+
+void GameScreen::check_3x3() {
+	int t = (curr_sym) ? 1 : -1;
+	int x = moves[moves.size()-1].first, y = moves[moves.size() - 1].second;
+
+	c_3x3.r[x] += t; c_3x3.c[y] += t;
+	if (x == y) { c_3x3.d1 += t; }
+	if (x + y == 2) { c_3x3.d2 += t; }
+
+	if (c_3x3.r[x] == 3 || c_3x3.c[y] == 3 || c_3x3.d1 == 3 || c_3x3.d2 == 3) { status = "O won!"; return; }
+	if (c_3x3.r[x] == -3 || c_3x3.c[y] == -3 || c_3x3.d1 == -3 || c_3x3.d2 == -3) { status = "X won!"; return; }
+
+	if (moves.size() == 9) { 
+		status = "Draw!!!"; 
+		/*for (int i = 0; i < 3; i++) {
+			printf("col[%d]: %d, row[%d]: %d\n", i, c_3x3.c[i], i, c_3x3.r[i]);
+		}
+		printf("diag1: %d, diag2: %d", c_3x3.d1, c_3x3.d2);*/
+	} 
 }
