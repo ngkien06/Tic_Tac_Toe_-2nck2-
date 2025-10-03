@@ -2,7 +2,7 @@
 #include "Config.h"
 
 void Button::draw() {
-	if (is_hovered() == true) { DrawRectangleRec(rec, ScreenC::C[3]); }
+	if (is_hovered() == true) { DrawRectangleRec(rec, ScreenC::C[5]); }
 	else { DrawRectangleRec(rec, ScreenC::C[2]); }
 
 	Vector2 txt_pos = { rec.x + rec.width / 2 - MeasureText(txt.c_str(), font_sz) / 2, rec.y + 8 };

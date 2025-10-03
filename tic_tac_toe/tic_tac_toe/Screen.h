@@ -43,6 +43,14 @@ class GameScreen : public Screen {
 private:
 	Button button_back;
 
+	struct square_3x3 {
+		Rectangle rec;
+		char t;
+	};
+	square_3x3 grid_3x3[3][3];
+
+	bool curr_sym;
+
 public:
 	GameScreen(GUI& gui);
 
@@ -50,6 +58,8 @@ public:
 	void draw() override;
 	void update() override;
 	void handle_input() override;
+
+	void draw_grid_3x3();
 };
 
 #endif // !SCREEN_H
