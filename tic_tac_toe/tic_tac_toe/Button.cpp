@@ -2,6 +2,8 @@
 #include "Config.h"
 
 void Button::draw() {
+	if (is_shown == false) { return; }
+
 	if (is_hovered() == true) { DrawRectangleRec(rec, ScreenC::C[5]); }
 	else { DrawRectangleRec(rec, ScreenC::C[2]); }
 
@@ -14,5 +16,5 @@ bool Button::is_hovered() {
 }
 
 bool Button::is_clicked() {
-	return CheckCollisionPointRec(GetMousePosition(), rec) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+	return CheckCollisionPointRec(GetMousePosition(), rec) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && is_shown;
 }

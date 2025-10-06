@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Button.h"
+#include "Memento.h"
 
 class GUI; // forward declaration???
 
@@ -44,6 +45,9 @@ class GameScreen : public Screen {
 private:
 	Button button_back;
 	Button button_clear;
+	Button button_prev;
+	Button button_next;
+	Button button_undo;
 
 	struct square_3x3 {
 		Rectangle rec;
@@ -59,9 +63,12 @@ private:
 	};
 	check_3x3 c_3x3;
 
-	std::vector<std::pair<int, int>> moves;
+	int turn_cnt;
+	std::pair<int, int> lst_mv;
 	std::string status;
 	bool curr_sym;
+
+	Caretaker caretaker;
 
 public:
 	GameScreen(GUI& gui);
@@ -76,6 +83,9 @@ public:
 	void draw_grid_3x3();
 	void clear_grid_3x3();
 	void check_3x3();
+
+	Snapshot create_snap_3x3();
+	void restore_snap_3x3(Snapshot snap);
 };
 
 #endif // !SCREEN_H

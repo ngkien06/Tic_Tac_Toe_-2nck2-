@@ -8,6 +8,7 @@ struct Button {
 	Rectangle rec;
 	std::string txt;
 	int font_sz;
+	bool is_shown;
 
 	void draw();
 	bool is_hovered();

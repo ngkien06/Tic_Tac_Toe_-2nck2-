@@ -12,12 +12,3 @@ Color ScreenC::C[6] = {
 		{ 226, 242, 253, 255 },
 		{ 66, 165, 245, 255 }
 };
-
-/*
-C[0] : Text
-C[1] : Node, Second menu
-C[2] : Button
-C[3] : Edge
-C[4] : Background
-C[5] : Active node
-*/
