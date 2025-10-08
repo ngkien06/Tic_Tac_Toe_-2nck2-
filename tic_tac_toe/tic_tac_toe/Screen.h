@@ -6,6 +6,7 @@
 
 #include "Button.h"
 #include "Memento.h"
+#include "Bot.h"
 
 class GUI; // forward declaration???
 
@@ -48,6 +49,9 @@ private:
 	Button button_prev;
 	Button button_next;
 	Button button_undo;
+	Button button_bot;
+	Button button_bot_y;
+	Button button_bot_n;
 
 	struct square_3x3 {
 		Rectangle rec;
@@ -68,7 +72,13 @@ private:
 	std::string status;
 	bool curr_sym;
 
-	Caretaker caretaker;
+	Caretaker caretaker; 
+
+	bool vs_bot = false;
+	Bot_3x3 bot_3x3;
+
+private:
+	void populate_button();
 
 public:
 	GameScreen(GUI& gui);

@@ -47,6 +47,30 @@ void MenuScreen::handle_input() {
 // --------------- <GameScreen> ------------------------
 
 GameScreen::GameScreen(GUI& gui) : Screen(gui) {
+	populate_button();
+
+	float cornerX = 9 * ScreenS::ScreenWidth / 160;
+	float dis = (6 * ScreenS::ScreenWidth / 10 - 2 * cornerX) / 3; // Divider at 6:4
+	float cornerY = 4 * ScreenS::ScreenHeight / 9 - 3 * dis / 2;
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) { 
+			grid_3x3[i][j].t = ' ';
+			grid_3x3[i][j].rec = { cornerX + j * dis, cornerY + i * dis, dis, dis };
+		}
+
+		c_3x3.r[i] = 0; c_3x3.c[i] = 0;
+	}
+	c_3x3.d1 = 0; c_3x3.d2 = 0;
+
+	turn_cnt = 0;
+	status = "Pending Player Move";
+	curr_sym = true;
+
+	caretaker.add_snap(create_snap_3x3());
+}
+
+void GameScreen::populate_button() {
 	button_back.rec = { 60 * ScreenS::ScreenWidth / 70, 65 * ScreenS::ScreenHeight / 70, ScreenS::ScreenWidth / 10, ScreenS::ScreenHeight / 22 };
 	button_back.txt = "Back";
 	button_back.font_sz = 20;
@@ -65,36 +89,36 @@ GameScreen::GameScreen(GUI& gui) : Screen(gui) {
 	button_prev.is_shown = false;
 
 	button_next.rec = { 0, 2.5f * ScreenS::ScreenHeight / 5, ScreenS::ScreenWidth / 9, ScreenS::ScreenHeight / 21 };
-	button_next.rec.x = 8.7 * ScreenS::ScreenWidth / 10 - button_prev.rec.width / 2;
+	button_next.rec.x = 8.7 * ScreenS::ScreenWidth / 10 - button_next.rec.width / 2;
 	button_next.txt = "Next";
 	button_next.font_sz = 24;
 	button_next.is_shown = false;
 
 	button_undo.rec = { 0, 2.5f * ScreenS::ScreenHeight / 5, ScreenS::ScreenWidth / 9, ScreenS::ScreenHeight / 21 };
-	button_undo.rec.x = 8 * ScreenS::ScreenWidth / 10 - button_prev.rec.width / 2;
+	button_undo.rec.x = 8 * ScreenS::ScreenWidth / 10 - button_undo.rec.width / 2;
 	button_undo.txt = "Undo";
 	button_undo.font_sz = 24;
 	button_undo.is_shown = true;
 
-	float cornerX = 9 * ScreenS::ScreenWidth / 160;
-	float dis = (6 * ScreenS::ScreenWidth / 10 - 2 * cornerX) / 3; // Divider at 6:4
-	float cornerY = 4 * ScreenS::ScreenHeight / 9 - 3 * dis / 2;
+	button_bot.rec = { 0, 1 * ScreenS::ScreenHeight / 6, ScreenS::ScreenWidth / 9, ScreenS::ScreenHeight / 21 };
+	button_bot.rec.x = 7.2 * ScreenS::ScreenWidth / 10 - button_bot.rec.width / 2;
+	button_bot.txt = "Bot";
+	button_bot.font_sz = 24;
+	button_bot.is_shown = true;
 
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) { 
-			grid_3x3[i][j].t = ' ';
-			grid_3x3[i][j].rec = { cornerX + j * dis, cornerY + i * dis, dis, dis };
-		}
+	button_bot_y.rec = { 0, 0, ScreenS::ScreenWidth / 9, ScreenS::ScreenHeight / 21 };
+	button_bot_y.rec.x = 7.2 * ScreenS::ScreenWidth / 10 + 7 * button_bot_y.rec.width / 10;
+	button_bot_y.rec.y = 1 * ScreenS::ScreenHeight / 6 - 3 * button_bot_y.rec.height / 5;
+	button_bot_y.txt = "Yes";
+	button_bot_y.font_sz = 24;
+	button_bot_y.is_shown = false;
 
-		c_3x3.r[i] = 0; c_3x3.c[i] = 0;
-	}
-	c_3x3.d1 = 0; c_3x3.d2 = 0;
-
-	turn_cnt = 0;
-	status = "Pending";
-	curr_sym = true;
-
-	caretaker.add_snap(create_snap_3x3());
+	button_bot_n.rec = { 0, 0, ScreenS::ScreenWidth / 9, ScreenS::ScreenHeight / 21 };
+	button_bot_n.rec.x = 7.2 * ScreenS::ScreenWidth / 10 + 7 * button_bot_n.rec.width / 10;
+	button_bot_n.rec.y = 1 * ScreenS::ScreenHeight / 6 + 3 * button_bot_n.rec.height / 5;
+	button_bot_n.txt = "No";
+	button_bot_n.font_sz = 24;
+	button_bot_n.is_shown = false;
 }
 
 void GameScreen::draw() {
@@ -105,14 +129,45 @@ void GameScreen::draw() {
 	button_prev.draw();
 	button_next.draw();
 	button_undo.draw();
+	button_bot.draw();
+	button_bot_y.draw();
+	button_bot_n.draw();
 
 	draw_grid_3x3();
 
-	//Draw divider at 6:4
+	// Draw divider at 6:4
 	DrawLineEx({ 6 * ScreenS::ScreenWidth / 10, 0 }, { 6 * ScreenS::ScreenWidth / 10, ScreenS::ScreenHeight }, 4, ScreenC::C[3]);
+
+	// Draw bot mode
+	std::string bot_st = vs_bot ? "Vs Bot" : "Vs Player";
+	float w = MeasureText(bot_st.c_str(), 25);
+	DrawText(bot_st.c_str(), 8 * ScreenS::ScreenWidth / 10 - w / 2, 6.2 * ScreenS::ScreenWidth / 8, 25, ScreenC::C[0]);
 }
 
 void GameScreen::update() {
+	if (vs_bot == true && status == "Pending Bot Move") {
+		std::string brd_st = "";
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				brd_st += grid_3x3[i][j].t;
+			}
+		}
+
+		Choice bot_mv = bot_3x3.minimax(brd_st, curr_sym, 0);
+		short i = bot_mv.move / 3, j = bot_mv.move % 3;
+		if (grid_3x3[i][j].t == ' ') {
+			grid_3x3[i][j].t = curr_sym ? 'O' : 'X';
+			lst_mv = { i, j };
+			turn_cnt++;
+			check_3x3();
+			curr_sym = !curr_sym;
+
+			caretaker.add_snap(create_snap_3x3());
+
+			if (status == "Pending Bot Move") { status = "Pending Player Move"; }
+		}														// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< here
+	}
+
 	handle_input();
 
 	if (status == "O won!" || status == "X won!" || status == "Draw!!!") { // long winded way
@@ -160,7 +215,15 @@ void GameScreen::handle_input() {
 		catch (const char* err_msg) { ; }
 	}
 
-	if (status != "Pending") { return; }
+	if (button_bot.is_clicked()) {
+		button_bot_y.is_shown = !button_bot_y.is_shown;
+		button_bot_n.is_shown = !button_bot_n.is_shown;
+	}
+
+	if (button_bot_y.is_clicked()) { vs_bot = true; clear_grid_3x3(); }
+	if (button_bot_n.is_clicked()) { vs_bot = false; clear_grid_3x3(); }
+
+	if (status != "Pending Player Move") { return; }
 
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -175,6 +238,9 @@ void GameScreen::handle_input() {
 					curr_sym = !curr_sym;
 
 					caretaker.add_snap(create_snap_3x3());
+
+					if (vs_bot == true && status == "Pending Player Move") { status = "Pending Bot Move"; }
+																		// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< here														
 				}
 			}
 		}
@@ -220,7 +286,7 @@ void GameScreen::clear_grid_3x3() {
 		for (int j = 0; j < 3; j++) { grid_3x3[i][j].t = ' '; }
 	}
 
-	status = "Pending";
+	status = "Pending Player Move";
 	c_3x3 = {
 		{0,0,0},
 		{0,0,0},
@@ -264,7 +330,7 @@ Snapshot GameScreen::create_snap_3x3() {
 			brd_st += grid_3x3[i][j].t;
 		}
 	}
-	//printf("%s:%d\n", brd_st.c_str(), turn_cnt);
+	printf("%s:%d\n", brd_st.c_str(), turn_cnt);
 	return Snapshot(brd_st, turn_cnt, c_3x3.r, c_3x3.c, c_3x3.d1, c_3x3.d2);
 }
 
